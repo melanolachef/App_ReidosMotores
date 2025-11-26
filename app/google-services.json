@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "24013322448",
+    "project_id": "reimotoresteste",
+    "storage_bucket": "reimotoresteste.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:24013322448:android:99001bacaaa8ff3ab306d5",
+        "android_client_info": {
+          "package_name": "com.example.testewebview"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAWhmahVIf22YJ2kD-tVf1czj010B3ibr8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:24013322448:android:13e191505be2778ab306d5",
+        "android_client_info": {
+          "package_name": "com.reimotores.avisos"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAWhmahVIf22YJ2kD-tVf1czj010B3ibr8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

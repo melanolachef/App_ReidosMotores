@@ -1,101 +1,122 @@
 ﻿# App_ReidosMotores
 
-Rei Avisos - Sistema de Alertas Corporativos
-Status: 🚧 Em desenvolvimento (MVP Funcional)
+O Rei Avisos é a solução mobile oficial da Rei dos Motores. Ele atua como uma "casca nativa" moderna para o sistema legado da empresa (PHP), adicionando capacidades que a web sozinha não consegue entregar: Notificações Push Individuais e presença na tela inicial do colaborador.
 
-Este projeto é uma solução mobile híbrida desenvolvida para a Rei dos Motores. O objetivo é notificar setores específicos da empresa (como Financeiro, Oficina, Estoque) sobre pendências urgentes, como a aprovação de Ordens de Serviço (OS), diretamente nos smartphones dos colaboradores.
+🏗 Arquitetura do Projeto
+O projeto utiliza a estratégia de App Híbrido com Remote Loader. O aplicativo Android não contém a lógica de negócio; ele carrega o sistema web existente dentro de uma WebView turbinada, injetando funcionalidades nativas.
 
-⚙️ Arquitetura do Sistema
-O sistema opera com uma arquitetura de Pub/Sub (Publicação e Inscrição) utilizando o Google Firebase como intermediário.
+Shutterstock
 
-Backend (Emissor): Um script em Python monitora o banco de dados/ERP (simulação). Quando detecta uma pendência, ele usa o Firebase Admin SDK para disparar um alerta.
+Fluxo de Dados (A "Ponte")
+Login: O colaborador acessa o App e faz login no sistema PHP existente.
 
-Nuvem (Transporte): O Firebase Cloud Messaging (FCM) recebe a mensagem e a distribui para os dispositivos inscritos no tópico específico (ex: financeiro).
+Captura de Identidade: Um script JS injetado (window.ReiAvisos) solicita ao Capacitor o Token FCM (Identidade única do aparelho).
 
-Mobile (Receptor): O aplicativo Android, construído com Capacitor, recebe a notificação (mesmo em segundo plano), vibra o aparelho e exibe o alerta na barra de status. Ao abrir, o JavaScript atualiza a interface em tempo real.
+Vínculo: O App envia esse Token silenciosamente para o backend (salvar_token.php), que o grava no banco de dados MySQL vinculado ao ID do usuário.
 
-🚀 Tecnologias Utilizadas
-Mobile & Frontend
-Capacitor 6: Framework para converter aplicações Web em Apps Nativos.
+Disparo: Quando o sistema precisa avisar algo (ex: "Sua senha venceu"), o PHP busca o token desse usuário e dispara a notificação via Firebase.
 
-Android Studio: Ferramenta de compilação e gerenciamento de emuladores (Gradle/Java).
+🚀 Tecnologias
+Mobile (Frontend Nativo)
+Capacitor 6: Runtime para execução do Web App.
 
-HTML5 / CSS3 / JavaScript: Interface do usuário e lógica de conexão com o plugin nativo.
+Plugin @capacitor-firebase/messaging: Gerenciamento de tokens e permissões de notificação.
 
-Plugin: @capacitor-firebase/messaging (Integração oficial com FCM).
+Android Studio: Compilação e assinatura do APK.
 
-Backend & Automação
-Python 3.12: Linguagem de script para automação dos disparos.
+Backend (Sistema Legado)
+PHP: Sistema ERP/Intranet da empresa.
 
-Firebase Admin SDK: Biblioteca Python para autenticação segura e envio de mensagens.
+MySQL: Armazena o vínculo id_usuario <-> device_token.
 
-Serviços Cloud
-Google Firebase:
+Firebase Admin SDK (Python/PHP): Serviço responsável por autenticar no Google e despachar as mensagens.
 
-Cloud Messaging: Entrega de Push Notifications.
+Nuvem
+Firebase Cloud Messaging (FCM): Motor de entrega das notificações Push.
 
-Project Settings: Gerenciamento de chaves de acesso (google-services.json e serviceAccountKey.json).
+📂 Estrutura do Projeto Mobile
+Ao contrário de um app tradicional, a pasta www está vazia ou contém apenas uma página de "Sem Conexão", pois o conteúdo vem da nuvem.
 
-📂 Estrutura de Arquivos Importantes
 Bash
 
 projeto-aviso-hibrido/
-├── android/               # Código nativo Android (Gerado pelo Capacitor)
-│   └── app/google-services.json  # 🔑 Chave do App Android (Obrigatória)
-├── www/                   # Código do Frontend (Site)
-│   └── index.html         # Interface e Lógica JS do App
-├── enviar_aviso.py        # 🐍 Script Python que dispara o alerta
-├── serviceAccountKey.json # 🔑 Chave de Admin do Python (Não compartilhar)
-├── capacitor.config.json  # Configurações do App (ID, Nome, etc)
-└── package.json           # Dependências do Node.js
-🔧 Como Executar o Projeto
+├── android/                 # Projeto Nativo Android
+├── capacitor.config.json    # ⚙️ Configura que aponta para a URL do PHP
+├── package.json             # Dependências (Capacitor + Plugins)
+└── ...
+Configuração Chave (capacitor.config.json)
+O segredo da integração está no apontamento do servidor:
+
+JSON
+
+{
+  "appId": "com.reimotores.avisos",
+  "appName": "Rei Avisos",
+  "webDir": "www",
+  "server": {
+    "url": "https://sistema.reimotores.com.br",
+    "androidScheme": "https",
+    "cleartext": true
+  }
+}
+🔌 Guia de Integração (Para o Backend)
+Para que o sistema PHP converse com o App, dois arquivos são necessários no servidor:
+
+1. O Receptor (salvar_token.php)
+Script PHP simples que recebe um POST JSON e salva no banco.
+
+PHP
+
+// Exemplo simplificado
+$sql = "UPDATE usuarios SET device_token = ? WHERE id = ?";
+2. O Injetor (Frontend JS)
+Snippet a ser adicionado no header.php ou footer.php do sistema:
+
+JavaScript
+
+import { FirebaseMessaging } from 'https://cdn.jsdelivr.net/npm/@capacitor-firebase/messaging@6.0.0/+esm';
+
+// Detecta se está rodando no App
+if (window.Capacitor) {
+    FirebaseMessaging.requestPermissions().then(() => {
+        FirebaseMessaging.getToken().then(result => {
+            // Envia result.token para salvar_token.php
+        });
+    });
+}
+🛠 Como Rodar e Atualizar
 Pré-requisitos
 Node.js instalado.
 
-Python instalado.
+Acesso ao código fonte do sistema PHP (para inserir os scripts).
 
-Android Studio (com emulador configurado).
-
-1. Configuração do Ambiente
-Instale as dependências do projeto:
+Comandos Úteis
+Atualizar Configurações: Se mudar a URL ou ícone:
 
 Bash
 
-npm install
-pip install firebase-admin
-2. Sincronização e Compilação
-Sempre que alterar o HTML ou adicionar plugins, sincronize com a pasta Android:
+npx cap copy
+Sincronizar Plugins: Se instalar novos recursos nativos (Câmera, GPS):
 
 Bash
 
 npx cap sync
-Abra o Android Studio para rodar o emulador:
+Abrir Projeto: Para gerar o APK ou rodar no emulador:
 
 Bash
 
 npx cap open android
-(Dentro do Android Studio, clique no botão "Play" ▶️)
+✅ Checklist de Implementação
+[x] Criação do projeto Capacitor.
 
-3. Disparando um Alerta
-Com o aplicativo rodando no celular (aberto ou minimizado):
+[x] Configuração do google-services.json (Assinatura do App).
 
-Garanta que o botão "Ativar Notificações" foi clicado no App.
+[x] Personalização (Ícone e Nome "Rei Avisos").
 
-No terminal, execute o script de teste:
+[x] Redirecionamento para URL de Produção (PHP).
 
-Bash
+[ ] Implementação do salvar_token.php no servidor.
 
-python enviar_aviso.py
-📝 Exemplo de Código (Python)
-Trecho responsável pelo envio da notificação para o setor financeiro:
+[ ] Inserção do script JS no header.php.
 
-Python
-
-mensagem = messaging.Message(
-    notification=messaging.Notification(
-        title="⚠️ AÇÃO NECESSÁRIA",
-        body="Setor Financeiro: Aprovar OS 0042 imediatamente."
-    ),
-    topic="financeiro", # O App deve estar inscrito neste tópico
-)
-response = messaging.send(mensagem)
+Desenvolvido pela equipe de TI da Rei dos Motores.
